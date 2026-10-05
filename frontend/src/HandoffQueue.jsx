@@ -20,8 +20,12 @@ export default function HandoffQueue({ onOpen }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState('')
 
+  // Load the queue now, then refresh it every 5 seconds.
   useEffect(() => {
-    getQueue().then(setQueue).catch((e) => setError(e.message))
+    const load = () => getQueue().then(setQueue).catch((e) => setError(e.message))
+    load()
+    const timer = setInterval(load, 5000)
+    return () => clearInterval(timer)
   }, [])
 
   async function resolve(id) {
@@ -39,8 +43,8 @@ export default function HandoffQueue({ onOpen }) {
       for (const [index, sample] of samples.entries()) {
         setBusy(`Running ${index + 1} of ${samples.length}…`)
         await runAgent(sample.id, sample.today, sample.turns)
+        setQueue(await getQueue()) // show each call as soon as it finishes
       }
-      setQueue(await getQueue())
     } catch (e) {
       setError(e.message)
     }

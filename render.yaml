@@ -8,3 +8,5 @@ services:
     envVars:
       - key: LLM_API_KEY
         sync: false   # asked for in the dashboard, never stored in the repository
+      - key: PRELOAD_SAMPLES   # fill the queue with the sample calls at startup
+        value: "1"

@@ -162,6 +162,13 @@ average. I kept the smaller model because it reads these calls equally well for 
 
 ## Hosting
 
+Live: <https://clinic-front-desk-agent-rhw3.onrender.com> (Render free plan: the first
+visit after a quiet spell takes up to a minute to wake). The hosted copy sets
+`PRELOAD_SAMPLES=1`, which runs the example and adversarial scripts in the background at
+startup so the queue is not empty; on the free model tier that takes a few minutes to
+finish. It is off by default, so a local or graded run starts clean.
+
+
 The Dockerfile builds the UI and serves it from the API, so one container is the whole
 app. On Render: New Web Service, pick this repository, runtime Docker, and optionally set
 `LLM_API_KEY`. If the frontend is hosted separately, build it with `VITE_API_URL` set to

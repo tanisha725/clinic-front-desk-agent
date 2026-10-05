@@ -1,7 +1,10 @@
 """REST API. POST /agent/run is the graded endpoint; the /api routes feed the UI."""
 
 import json
+import os
+import threading
 import traceback
+from contextlib import asynccontextmanager
 from datetime import date
 from pathlib import Path
 
@@ -17,7 +20,18 @@ from .tools import TOOLS, ClinicStore
 ROOT = Path(__file__).resolve().parent.parent.parent
 FRONTEND_BUILD = ROOT / "frontend" / "dist"
 
-app = FastAPI(title="Sunrise Clinic front desk agent")
+
+
+@asynccontextmanager
+async def lifespan(app):
+    # Hosted demo only (PRELOAD_SAMPLES=1): run the sample scripts in the background at
+    # startup, so a visitor does not open an empty queue and wait on the model's rate limit.
+    if os.environ.get("PRELOAD_SAMPLES"):
+        threading.Thread(target=preload_samples, daemon=True).start()
+    yield
+
+
+app = FastAPI(title="Sunrise Clinic front desk agent", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
@@ -93,6 +107,11 @@ def samples():
             scripts.append({"id": script["id"], "today": script["today"], "turns": script["turns"],
                             "description": script.get("description", "")})
     return scripts
+
+
+def preload_samples():
+    for script in samples():
+        agent_run(RunRequest(conversation_id=script["id"], today=script["today"], turns=script["turns"]))
 
 
 # Serve the built React app from the same server, so one process is the whole product.

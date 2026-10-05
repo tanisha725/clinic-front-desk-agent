@@ -51,7 +51,7 @@ backend/app/main.py         FastAPI routes
 backend/tests/              tools, whole conversations, misbehaving model, HTTP
 frontend/src/               Sidebar, HandoffQueue, ConversationDetail
 adversarial/                my eight cases
-conversations/, runner.py, schema.md, starter/README.md    the starter pack, unchanged
+conversations/, runner.py, schema.md    from the starter pack, unchanged
 check.py                    compares runner results with `expected`
 ```
 

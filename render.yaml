@@ -1,0 +1,10 @@
+# Render reads this file and sets the service up from the repository.
+services:
+  - type: web
+    name: clinic-front-desk-agent
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: LLM_API_KEY
+        sync: false   # asked for in the dashboard, never stored in the repository

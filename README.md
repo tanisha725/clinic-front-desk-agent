@@ -24,7 +24,7 @@ cd backend && .venv/bin/python -m pytest      # 69 tests
 ```
 
 To use the model, put a key for any OpenAI-compatible endpoint in a `.env` file in the
-project root (it is git-ignored; `run.sh` loads it):
+project root (`run.sh` loads it; never commit it):
 
 ```bash
 LLM_API_KEY=...                                   # enables the model
@@ -34,7 +34,6 @@ LLM_MODEL=qwen/qwen3.8-27b                        # default
 
 With no key the agent uses its rule-based reader, so everything above also works offline.
 
-Docker: `docker build -t frontdesk . && docker run -p 8000:8000 frontdesk`.
 Frontend development with hot reload: `cd frontend && npm run dev` (proxies to :8000).
 
 ## Layout
@@ -169,8 +168,5 @@ visit after a quiet spell takes up to a minute to wake). The hosted copy sets
 startup so the queue is not empty; on the free model tier that takes a few minutes to
 finish. It is off by default, so a local or graded run starts clean.
 
-
-The Dockerfile builds the UI and serves it from the API, so one container is the whole
-app. On Render: New Web Service, pick this repository, runtime Docker, and optionally set
-`LLM_API_KEY`. If the frontend is hosted separately, build it with `VITE_API_URL` set to
-the API's address.
+The API serves the built UI itself, so one process is the whole app. If the frontend is
+hosted separately, build it with `VITE_API_URL` set to the API's address.

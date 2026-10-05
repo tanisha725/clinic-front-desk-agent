@@ -4,6 +4,7 @@ services:
     name: clinic-front-desk-agent
     runtime: docker
     plan: free
+    autoDeploy: false   # the live copy stays on its current build
     healthCheckPath: /api/health
     envVars:
       - key: LLM_API_KEY

@@ -161,8 +161,12 @@ def merge(state, reading):
     """Fold one turn's reading into what we already know. Newer values win."""
     # "book" is the weakest signal (any mention of an appointment), so it never
     # overwrites a reschedule or cancel that was already stated.
-    if reading["intent"] and not (reading["intent"] == "book" and state.intent):
-        state.intent = reading["intent"]
+    # And a "reschedule" heard in the middle of a new booking ("accha, toh 9:30 kar
+    # dijiye") is the caller changing the slot they want, not moving an old appointment.
+    intent = reading["intent"]
+    changing_requested_slot = state.intent == "book" and intent == "reschedule"
+    if intent and not (intent == "book" and state.intent) and not changing_requested_slot:
+        state.intent = intent
     if reading["doctor_id"]:
         state.doctor_id = reading["doctor_id"]
     if reading["dates"]:

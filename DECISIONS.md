@@ -191,11 +191,37 @@ These are real, and several are how I would break my own agent.
    intent ends as `abandoned`, not `escalated`.
 9. **The UI log is in memory.** A restart empties the queue. The clinic data itself is
    rebuilt per conversation by design.
-10. **The model path is tested with a fake model only** (failure, wrong shape, invented
-    values). The numbers in the README for the model reader are not measured yet.
+10. **The free tier's rate limit shapes latency.** A burst of new conversations waits on the
+    provider's limit (see the README numbers). If the limit is still hit after two retries,
+    that one conversation is read by the rule reader instead, which could differ from a
+    model reading.
+11. **The model has only been measured on 23 conversations** (the 15 examples and my 8). It
+    read all of them correctly after the fix described in section 7, but that is a small set.
 
 ## 6. What I left out on purpose
 
 Authentication, a database, multi-clinic support, changing doctor during a reschedule,
 creating patients, and letting the model write replies. The brief asks for a smaller scope
 done carefully, and each of these would have added surface without adding safety.
+
+## 7. What running the real model taught me
+
+I built and tested the policy with the rule reader first, then connected the model. Two
+things changed.
+
+1. **The model called a mid-booking change a "reschedule".** In `cv_0015` the caller says
+   "Accha, toh 9:30 kar dijiye" after 09:00 turns out to be taken. The model labelled that
+   turn `reschedule`, so the agent went looking for an existing appointment, found none and
+   booked nothing. `cv_0006` failed the same way. I fixed it in two places: the prompt now
+   says reschedule means an appointment that already exists, and, more importantly, the
+   policy ignores a `reschedule` that arrives while a new booking is in progress. The second
+   fix is the one I trust, because it does not depend on the model obeying the prompt.
+   There is a test for it using a fake model that repeats the mistake.
+2. **The model I planned to use was no longer offered**, and the free tier's token limit made
+   later conversations in a batch fall back to rules. Falling back quietly would have made
+   run 1 and run 2 of the same conversation use different readers. So a rate-limited call
+   now waits and retries before it falls back.
+
+Model choice: `qwen/qwen3.8-27b` and `openai/gpt-oss-120b` both got all 23 conversations
+right. The smaller one used about 30% fewer tokens, so I kept it. Because the model only
+fills in a form and the policy does the rest, a small model is enough.

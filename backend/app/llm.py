@@ -7,17 +7,20 @@ and does not write the reply. Any OpenAI-compatible chat endpoint works.
 Configure with environment variables:
     LLM_API_KEY    required to enable the model (without it, rules.py is used)
     LLM_BASE_URL   default https://api.groq.com/openai/v1
-    LLM_MODEL      default llama-3.3-70b-versatile
+    LLM_MODEL      default qwen/qwen3.8-27b
 """
 
 import json
 import os
+import time
 
 import httpx
 
 BASE_URL = os.environ.get("LLM_BASE_URL", "https://api.groq.com/openai/v1")
-MODEL = os.environ.get("LLM_MODEL", "llama-3.3-70b-versatile")
+MODEL = os.environ.get("LLM_MODEL", "qwen/qwen3.8-27b")
 TIMEOUT_SECONDS = 30
+MAX_ATTEMPTS = 3        # one call plus two retries when rate limited
+MAX_WAIT_SECONDS = 40   # per retry, so a request stays inside the runner's 120 s timeout
 
 # Same conversation in, same reading out: remember what the model said so a
 # repeated run cannot get a different answer (and costs no tokens).
@@ -31,6 +34,8 @@ Doctors: {doctors}
 Return JSON: {{"turns": [ ... ]}} with exactly one object per caller turn, in order.
 Each object has these keys (use null when the turn does not say it):
   "intent": "book" | "reschedule" | "cancel" | null
+            "reschedule" only when the caller says they ALREADY HAVE an appointment and want it moved.
+            Changing the day or time they are asking for during a new booking is still "book".
   "doctor_id": one of the doctor ids above | null
   "dates": list of dates mentioned, in the order spoken. Do NOT compute calendar dates.
            Each item is one of {{"relative": 0}} for aaj/today, {{"relative": 1}} for kal/tomorrow,
@@ -64,21 +69,28 @@ def read_turns(turns, today, doctors):
 
     doctor_list = ", ".join(f"{d['id']} = {d['name']} ({d['speciality']})" for d in doctors.values())
     numbered = "\n".join(f"{i}. {text}" for i, text in enumerate(turns, start=1))
-    response = httpx.post(
-        f"{BASE_URL}/chat/completions",
-        headers={"Authorization": f"Bearer {os.environ['LLM_API_KEY']}"},
-        json={
-            "model": MODEL,
-            "temperature": 0,
-            "seed": 7,
-            "response_format": {"type": "json_object"},
-            "messages": [
-                {"role": "system", "content": PROMPT.format(doctors=doctor_list)},
-                {"role": "user", "content": f"Caller turns:\n{numbered}"},
-            ],
-        },
-        timeout=TIMEOUT_SECONDS,
-    )
+    request = {
+        "model": MODEL,
+        "temperature": 0,
+        "seed": 7,
+        "response_format": {"type": "json_object"},
+        "messages": [
+            {"role": "system", "content": PROMPT.format(doctors=doctor_list)},
+            {"role": "user", "content": f"Caller turns:\n{numbered}"},
+        ],
+    }
+    for attempt in range(MAX_ATTEMPTS):
+        response = httpx.post(
+            f"{BASE_URL}/chat/completions",
+            headers={"Authorization": f"Bearer {os.environ['LLM_API_KEY']}"},
+            json=request,
+            timeout=TIMEOUT_SECONDS,
+        )
+        if response.status_code != 429 or attempt == MAX_ATTEMPTS - 1:
+            break
+        # Rate limited: wait as long as the provider asks (capped), then try again.
+        # Waiting keeps the answer the same; falling back to rules could change it.
+        time.sleep(min(float(response.headers.get("retry-after", 5)), MAX_WAIT_SECONDS))
     response.raise_for_status()
     body = response.json()
     raw = parse_reply(body["choices"][0]["message"]["content"], len(turns))

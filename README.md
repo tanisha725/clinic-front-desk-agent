@@ -23,14 +23,16 @@ python3 runner.py --dir adversarial && python3 check.py adversarial
 cd backend && .venv/bin/python -m pytest      # 50 tests
 ```
 
-With no API key the agent uses its rule-based reader, so everything above works offline.
-To use a model, set a key for any OpenAI-compatible endpoint before `./run.sh`:
+To use the model, put a key for any OpenAI-compatible endpoint in a `.env` file in the
+project root (it is git-ignored; `run.sh` loads it):
 
 ```bash
-export LLM_API_KEY=...                                   # enables the model
-export LLM_BASE_URL=https://api.groq.com/openai/v1       # default
-export LLM_MODEL=llama-3.3-70b-versatile                 # default
+LLM_API_KEY=...                                   # enables the model
+LLM_BASE_URL=https://api.groq.com/openai/v1       # default
+LLM_MODEL=qwen/qwen3.8-27b                        # default
 ```
+
+With no key the agent uses its rule-based reader, so everything above also works offline.
 
 Docker: `docker build -t frontdesk . && docker run -p 8000:8000 frontdesk`.
 Frontend development with hot reload: `cd frontend && npm run dev` (proxies to :8000).
@@ -137,17 +139,26 @@ hand; nothing it does is kept.
 
 ## Model, tokens and latency
 
-| Reader | Model | Tokens per conversation | Latency per conversation |
-|---|---|---|---|
-| Rules (no key) | none | 0 | under 1 ms in the agent, 1 to 15 ms through the runner |
-| LLM | `llama-3.3-70b-versatile` on Groq by default | one call per conversation; **not measured yet** | **not measured yet** |
+Model: **`qwen/qwen3.8-27b` on Groq** (free tier), temperature 0, one call per conversation.
 
-The rules numbers are from `python3 runner.py --repeat 3 && python3 check.py` on the 15
-examples and the 8 adversarial cases (all pass, deterministic across 3 runs). `check.py`
-prints the averages, and each response carries its own `metrics`.
+Measured with `python3 runner.py --repeat 3` on the 15 examples and the 8 adversarial
+cases (23 conversations, 69 runs). All 23 match their `expected` block and are
+deterministic across 3 runs. `check.py` prints the averages, and every response carries
+its own `metrics`.
 
-The model is called once per conversation at temperature 0, and its reading is cached by
-conversation text, so the second and third run of the same conversation cost no tokens.
+| | Tokens per conversation | Latency per conversation |
+|---|---|---|
+| First run, model reader | 928 average (846 to 994) | about 1 s when not rate limited (fastest 0.8 s); 12.4 s average when all 23 run back to back |
+| Repeat run of the same conversation | 0 (the reading is cached) | under 5 ms |
+| Rule reader (no key, or model unavailable) | 0 | under 5 ms |
+
+About the 12.4 s: the free tier allows 8,000 tokens per minute, which is roughly nine
+conversations. When the limit is hit, the agent waits for the time the provider asks and
+retries (up to two retries, 40 s each) instead of falling back to rules, because switching
+reader between runs could change the answer. On a paid tier the wait disappears.
+
+I also ran the same 23 conversations on `openai/gpt-oss-120b`: all pass, at 1,315 tokens
+average. I kept the smaller model because it reads these calls equally well for fewer tokens.
 
 ## Hosting
 

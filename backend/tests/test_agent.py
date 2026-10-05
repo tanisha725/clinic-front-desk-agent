@@ -122,6 +122,19 @@ def test_model_cannot_switch_off_the_emergency_rule(monkeypatch):
     assert result["escalation_reason"] == "clinical_urgent"
 
 
+def test_changing_the_requested_time_mid_booking_is_not_a_reschedule(monkeypatch):
+    # A real model read "9:30 kar dijiye" as a reschedule. The policy must still book.
+    use_fake_model(monkeypatch, [
+        {"intent": "book", "doctor_id": "dr_rao", "dates": [{"day": 8}], "time": "09:00"},
+        {"intent": "reschedule", "time": "09:30"},
+        {"caller_name": "Shalini Uniyal"},
+    ])
+    result = run(["8 tareekh subah 9 baje Dr. Rao ke saath.", "Accha, toh 9:30 kar dijiye.",
+                  "Shalini Uniyal, 9812200694."])
+    assert result["terminal_state"] == "booked"
+    assert result["tool_calls"][-1]["arguments"]["start"] == "09:30"
+
+
 def test_weekday_and_day_number_resolution():
     resolve = understand.resolve_date
     assert resolve({"relative": 2}, TODAY) == "2026-10-03"

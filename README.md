@@ -20,7 +20,7 @@ builds the frontend once, and serves both on <http://localhost:8000>.
 python3 runner.py --repeat 3          # replay the 15 examples, check determinism
 python3 check.py                      # compare results/ with each script's `expected`
 python3 runner.py --dir adversarial && python3 check.py adversarial
-cd backend && .venv/bin/python -m pytest      # 50 tests
+cd backend && .venv/bin/python -m pytest      # 69 tests
 ```
 
 To use the model, put a key for any OpenAI-compatible endpoint in a `.env` file in the
@@ -149,13 +149,14 @@ its own `metrics`.
 | | Tokens per conversation | Latency per conversation |
 |---|---|---|
 | First run, model reader | 928 average (846 to 994) | about 1 s when not rate limited (fastest 0.8 s); 12.4 s average when all 23 run back to back |
-| Repeat run of the same conversation | 0 (the reading is cached) | under 5 ms |
+| Repeat run of the same conversation | 0 (the first reading is remembered) | under 5 ms |
 | Rule reader (no key, or model unavailable) | 0 | under 5 ms |
 
 About the 12.4 s: the free tier allows 8,000 tokens per minute, which is roughly nine
 conversations. When the limit is hit, the agent waits for the time the provider asks and
-retries (up to two retries, 40 s each) instead of falling back to rules, because switching
-reader between runs could change the answer. On a paid tier the wait disappears.
+retries (up to two retries, 40 s each). On a paid tier the wait disappears. If it still
+cannot reach the model, the rule reader takes that conversation and keeps it for every
+repeat, so the three runs of one conversation never use different readers.
 
 I also ran the same 23 conversations on `openai/gpt-oss-120b`: all pass, at 1,315 tokens
 average. I kept the smaller model because it reads these calls equally well for fewer tokens.

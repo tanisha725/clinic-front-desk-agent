@@ -22,10 +22,6 @@ TIMEOUT_SECONDS = 30
 MAX_ATTEMPTS = 3        # one call plus two retries when rate limited
 MAX_WAIT_SECONDS = 40   # per retry, so a request stays inside the runner's 120 s timeout
 
-# Same conversation in, same reading out: remember what the model said so a
-# repeated run cannot get a different answer (and costs no tokens).
-_cache = {}
-
 PROMPT = """You read phone calls to a clinic front desk in India (Hindi, English or a mix).
 You do NOT answer the caller. You only fill in a form for each caller turn.
 
@@ -63,10 +59,6 @@ def enabled():
 
 def read_turns(turns, today, doctors):
     """Returns (list of raw dicts, tokens used). Raises if the reply is not usable."""
-    key = (MODEL, today, tuple(turns))
-    if key in _cache:
-        return _cache[key], 0
-
     doctor_list = ", ".join(f"{d['id']} = {d['name']} ({d['speciality']})" for d in doctors.values())
     numbered = "\n".join(f"{i}. {text}" for i, text in enumerate(turns, start=1))
     request = {
@@ -94,7 +86,6 @@ def read_turns(turns, today, doctors):
     response.raise_for_status()
     body = response.json()
     raw = parse_reply(body["choices"][0]["message"]["content"], len(turns))
-    _cache[key] = raw
     return raw, body.get("usage", {}).get("total_tokens", 0)
 
 

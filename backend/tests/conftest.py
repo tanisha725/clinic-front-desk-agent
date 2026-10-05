@@ -11,7 +11,9 @@ sys.path.insert(0, str(ROOT / "backend"))
 @pytest.fixture(autouse=True)
 def no_llm(monkeypatch):
     """Tests never call a real model; they run on the rule-based reader."""
+    from app import understand
     monkeypatch.delenv("LLM_API_KEY", raising=False)
+    understand._remembered.clear()  # each test starts with nothing remembered
 
 
 def load_scripts():

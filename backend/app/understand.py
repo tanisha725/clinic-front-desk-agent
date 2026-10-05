@@ -21,17 +21,30 @@ FLAGS = ("emergency", "medical_advice", "injection", "out_of_scope", "withdraw")
 WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 
+# conversation -> (raw reading, tokens it cost, which reader produced it).
+# Whichever reader handled a conversation first keeps handling it: the same conversation
+# always gets the same reading, even if the model was unavailable the first time, and a
+# repeat costs no tokens. Lost on restart.
+_remembered = {}
+
+
 def understand(turns, today, doctors):
     """Returns (one clean dict per turn, tokens used, 'llm' or 'rules')."""
-    raw, tokens, source = None, 0, "rules"
-    if llm.enabled():
-        try:
-            raw, tokens = llm.read_turns(turns, today, doctors)
-            source = "llm"
-        except Exception as error:  # network error, bad JSON, wrong shape: fall back
-            print(f"LLM failed, using rules instead: {error}")
-    if raw is None:
-        raw = [rules.read_turn(text, doctors) for text in turns]
+    key = (llm.MODEL if llm.enabled() else None, today, tuple(turns))
+    if key in _remembered:
+        raw, source = _remembered[key]
+        tokens = 0
+    else:
+        raw, tokens, source = None, 0, "rules"
+        if llm.enabled():
+            try:
+                raw, tokens = llm.read_turns(turns, today, doctors)
+                source = "llm"
+            except Exception as error:  # network error, bad JSON, wrong shape: fall back
+                print(f"LLM failed, using rules instead: {error}")
+        if raw is None:
+            raw = [rules.read_turn(text, doctors) for text in turns]
+        _remembered[key] = (raw, source)
     return [clean(r, text, today, doctors) for r, text in zip(raw, turns)], tokens, source
 
 

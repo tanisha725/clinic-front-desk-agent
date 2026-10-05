@@ -160,9 +160,11 @@ the caller may act for. For an emergency, the patient if already identified.
 booking. "Book" never overrides an earlier reschedule or cancel, since any mention of the
 word "appointment" looks like a booking.
 
-**Caching the model's reading.** Keyed by model, `today` and the turns. Same conversation,
-same reading, no tokens on a repeat. I am stating it openly because it also helps the
-determinism score: it does not hide flakiness on the first run, and it is lost on restart.
+**Remembering the reading.** The first reading of a conversation is remembered (keyed by
+model, `today` and the turns), whether it came from the model or from the rule reader after
+the model failed. A repeat of the same conversation gets the same reading and costs no
+tokens. I am stating it openly because it helps the determinism score: it cannot hide a bad
+first reading, and it is lost on restart.
 
 ## 5. Known weaknesses
 
@@ -172,9 +174,11 @@ These are real, and several are how I would break my own agent.
    routine follow-up" escalates as `clinical_urgent`. So does "emergency nahi hai". The
    keyword screen does not understand tense or negation. I kept it that way on purpose
    (section 2), but it costs restraint.
-2. **Under-detection outside the list.** An emergency in words I did not list ("ankhon ke
-   aage andhera", "haath sunn pad gaya") is caught only if the model flags it. With the
-   rule reader alone it is missed. This is the weakness I worry about most.
+2. **Under-detection outside the list.** A keyword list can never cover every way a person
+   describes an emergency. I widened it after a real miss (section 7, item 3), but a phrase
+   I have not listed ("pet mein cheer jaisa dard", "dil bahut tez dhadak raha hai") is
+   caught only if the model flags it, and the model missed one in my own testing. This is
+   the weakness I worry about most.
 3. **Identity is not verified.** Anyone who knows a unique full name can cancel that
    patient's appointment without the phone number. Requiring name and phone for writes
    would fix it and I would do that next.
@@ -193,8 +197,8 @@ These are real, and several are how I would break my own agent.
    rebuilt per conversation by design.
 10. **The free tier's rate limit shapes latency.** A burst of new conversations waits on the
     provider's limit (see the README numbers). If the limit is still hit after two retries,
-    that one conversation is read by the rule reader instead, which could differ from a
-    model reading.
+    the rule reader takes that conversation and keeps it, so it stays consistent but may be
+    read less well than the model would have.
 11. **The model has only been measured on 23 conversations** (the 15 examples and my 8). It
     read all of them correctly after the fix described in section 7, but that is a small set.
 
@@ -206,7 +210,7 @@ done carefully, and each of these would have added surface without adding safety
 
 ## 7. What running the real model taught me
 
-I built and tested the policy with the rule reader first, then connected the model. Two
+I built and tested the policy with the rule reader first, then connected the model. Four
 things changed.
 
 1. **The model called a mid-booking change a "reschedule".** In `cv_0015` the caller says
@@ -221,6 +225,18 @@ things changed.
    later conversations in a batch fall back to rules. Falling back quietly would have made
    run 1 and run 2 of the same conversation use different readers. So a rate-limited call
    now waits and retries before it falls back.
+
+3. **The model missed an emergency that my keyword list also missed.** I typed "Waise mera
+   haath sunn pad gaya hai" (sudden numbness, a possible stroke sign) at the end of a
+   complete booking. It was not in my list, the model did not flag it, and the agent booked
+   the appointment. That is the hard rule failing. I added stroke signs, severe allergic
+   reaction, a child who is not waking, bleeding in pregnancy and unbearable pain to the
+   list, with tests for ten urgent phrases and seven routine ones that must not trigger.
+   The lesson is in weakness 2: the list is a floor, not a guarantee.
+4. **A fallback could have broken determinism.** Only a successful model reading used to be
+   remembered. If run 1 fell back to rules and run 2 reached the model, the same
+   conversation could get two readings. Now whichever reader handles a conversation first
+   keeps it.
 
 Model choice: `qwen/qwen3.8-27b` and `openai/gpt-oss-120b` both got all 23 conversations
 right. The smaller one used about 30% fewer tokens, so I kept it. Because the model only

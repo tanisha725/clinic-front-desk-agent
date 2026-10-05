@@ -2,7 +2,7 @@
 
 import pytest
 
-from app import agent, llm, understand
+from app import agent, llm, safety, understand
 from app.tools import CLINIC_DATA
 from conftest import load_scripts
 
@@ -133,6 +133,53 @@ def test_changing_the_requested_time_mid_booking_is_not_a_reschedule(monkeypatch
                   "Shalini Uniyal, 9812200694."])
     assert result["terminal_state"] == "booked"
     assert result["tool_calls"][-1]["arguments"]["start"] == "09:30"
+
+
+def test_the_first_reader_keeps_the_conversation(monkeypatch):
+    # Run 1: the model is down, so rules read the call. Run 2: the model is back and would
+    # read it differently. The conversation must still get the reading it got first.
+    use_fake_model(monkeypatch, ValueError("rate limited"))
+    first = run(BOOKING)
+    use_fake_model(monkeypatch, [{}, {}])
+    second = run(BOOKING)
+    assert first["terminal_state"] == second["terminal_state"] == "booked"
+    assert called(first) == called(second)
+
+
+URGENT = [
+    "Waise mera haath sunn pad gaya hai.",
+    "Saas lene me problem ho rahi hai and pain in the left side of chest",
+    "Papa ka chehra tedha ho gaya hai aur bol nahi pa rahe.",
+    "Achanak bahut tez sir dard ho raha hai.",
+    "Bachcha uth nahi raha hai.",
+    "Khansi mein khoon aa raha hai.",
+    "Hont sooj gaye hain dawai ke baad.",
+    "Wife pregnant hai aur bleeding ho rahi hai.",
+    "Dard bardasht nahi ho raha.",
+    "My mother suddenly has weakness on one side.",
+]
+ROUTINE = [
+    "Do din se halka bukhar aur khansi hai, Dr. Rao ko dikhana hai.",
+    "Sir dard rehta hai, Dr. Rao se milna hai.",
+    "Bachche ko tika lagwana hai Dr. Sethi se.",
+    "Pair mein moch aa gayi hai, kal dikhana hai.",
+    "Meri saas ko Dr. Rao ko dikhana hai.",
+    "Wife pregnant hai, routine checkup karwana hai.",
+    "Kamzori rehti hai, checkup karwana hai.",
+]
+
+
+@pytest.mark.parametrize("text", URGENT)
+def test_emergency_phrases_are_caught_without_a_model(text):
+    assert safety.screen(text) == "emergency"
+    result = run(["Dr. Rao ke saath Saturday subah 10 baje. Tarun Bisht, 9812200663.", text])
+    assert result["escalation_reason"] == "clinical_urgent"
+    assert "book_appointment" not in called(result)
+
+
+@pytest.mark.parametrize("text", ROUTINE)
+def test_routine_complaints_are_not_emergencies(text):
+    assert safety.screen(text) != "emergency"
 
 
 def test_weekday_and_day_number_resolution():

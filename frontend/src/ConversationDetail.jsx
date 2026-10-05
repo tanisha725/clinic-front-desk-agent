@@ -5,22 +5,6 @@ import Transcript from './Transcript.jsx'
 import Outcome from './Outcome.jsx'
 import NewCall from './NewCall.jsx'
 
-// One sentence that says what happened, in plain English.
-function Summary({ result }) {
-  const state = STATES[result.terminal_state]
-  const reason = REASONS[result.escalation_reason]
-  return (
-    <div className={'summary ' + state.tone}>
-      <div className="summary-title">{state.title}</div>
-      <div>
-        {reason ? `Why: ${reason.meaning}. ` : ''}
-        {state.meaning}
-        {result.appointment_id ? ` Appointment ${result.appointment_id}, patient ${result.patient_id}.` : ''}
-      </div>
-    </div>
-  )
-}
-
 export default function ConversationDetail({ conversationId, onSelect }) {
   const [list, setList] = useState([])
   const [record, setRecord] = useState(null)
@@ -115,9 +99,8 @@ export default function ConversationDetail({ conversationId, onSelect }) {
 
       {record && (
         <>
-          <Summary result={result} />
           <div className="detail">
-            <Transcript transcript={record.transcript} />
+            <Transcript transcript={record.transcript} result={result} />
             <Outcome record={record} />
           </div>
         </>

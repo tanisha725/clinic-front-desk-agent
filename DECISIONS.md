@@ -225,3 +225,30 @@ things changed.
 Model choice: `qwen/qwen3.8-27b` and `openai/gpt-oss-120b` both got all 23 conversations
 right. The smaller one used about 30% fewer tokens, so I kept it. Because the model only
 fills in a form and the policy does the rest, a small model is enough.
+
+## 8. Where the UI differs from the two mockups
+
+I kept the structure, content and layout of both screens: the shared sidebar, the header
+with its status badge, the four counters, the open handoffs table with the same columns
+and a Resolve button, the transcript with CALLER / TOOL / AGENT rows and tool calls inline
+where they fired, the closing result banner, and the Outcome panel with the same fields
+and the determinism line. These are the places where I added to or changed the mockup:
+
+- **Things the mockup could not work without.** A static picture does not say how a
+  conversation gets on screen. I added "Replay sample calls" on the queue, and a "Showing
+  call" picker, "Run again 3 times" and "+ New call" on the conversation screen. Without
+  them a reviewer opening the live link would see two empty pages.
+- **Things I added for readability.** Turn 1 / Turn 2 dividers in the transcript, a small
+  legend, a plain-English title above each raw tool call ("Checked free slots"), a "View"
+  button beside Resolve, and a one-line hint under "Open handoffs". The raw call and its
+  result are still shown exactly as in the mockup, under the title.
+- **The sidebar has two items, not seven.** The mockup shows seven unlabelled icons. Only
+  two screens exist, so I did not draw five buttons that go nowhere.
+- **"this session" instead of "today"** under the Conversations counter. The log is in
+  memory, so the count is since the server started, and I did not want the label to claim
+  more than that.
+- **"Caller said" for non-clinical handoffs is the agent's summary** ("3 patients match:
+  ..."), not a quote. For clinical and medical-advice handoffs it is the caller's exact
+  words in quotes, as in the mockup.
+- **`search_slots` has no `window` argument** (see section 3, item 4), so the tool rows show
+  `doctor_id` and `date` only.

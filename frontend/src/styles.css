@@ -104,11 +104,11 @@ textarea:focus-visible, input:focus-visible { outline: 2px solid var(--blue); ou
   border-radius: 8px; background: var(--card); color: var(--text); }
 .toolbar-buttons { display: flex; gap: 8px; }
 
-.summary { padding: 14px 18px; border-radius: 12px; margin-bottom: 16px; border: 1px solid; line-height: 1.5; }
-.summary-title { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
-.summary.green { background: var(--green-soft); border-color: #bfe3cd; color: #0f5132; }
-.summary.red { background: var(--red-soft); border-color: #f3c4bf; color: #8f2318; }
-.summary.grey { background: var(--grey-soft); border-color: #d9dfe8; color: #354054; }
+.banner { padding: 10px 14px; border-radius: 8px; font-weight: 600; font-size: 13px; line-height: 1.5;
+  border: 1px solid; margin-top: 6px; }
+.banner.green { background: var(--green-soft); border-color: #bfe3cd; color: #0f5132; }
+.banner.red { background: var(--red-soft); border-color: #f3c4bf; color: #8f2318; }
+.banner.grey { background: var(--grey-soft); border-color: #d9dfe8; color: #354054; }
 
 .detail { display: grid; grid-template-columns: minmax(0, 3fr) minmax(270px, 2fr); gap: 18px; align-items: start; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--muted);

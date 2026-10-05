@@ -7,6 +7,11 @@ function Row({ name, value }) {
   )
 }
 
+// 4200 -> "4.2 s", 3 -> "3 ms"
+function latency(ms) {
+  return ms >= 1000 ? `${(ms / 1000).toFixed(1)} s` : `${ms} ms`
+}
+
 // The machine-readable result: the same fields POST /agent/run returns.
 export default function Outcome({ record }) {
   const { result, fingerprints } = record
@@ -24,12 +29,14 @@ export default function Outcome({ record }) {
       <Row name="tool_calls" value={result.tool_calls.length} />
       <Row name="turns" value={result.metrics.turns} />
       <Row name="tokens" value={result.metrics.tokens.toLocaleString()} />
-      <Row name="latency" value={`${result.metrics.latency_ms} ms`} />
+      <Row name="latency" value={latency(result.metrics.latency_ms)} />
 
       <div className="eyebrow determinism">Determinism</div>
       <div className="outcome-row">
         <span className="muted">
-          {runs === 1 ? 'Run once so far.' : `Same result across ${runs} runs.`}
+          {runs === 1
+            ? 'Run once so far.'
+            : `${stable ? 'Same' : 'Different'} terminal state across ${runs} runs.`}
         </span>
         <span className={'badge ' + (stable ? 'green' : 'red')}>{stable ? 'STABLE' : 'UNSTABLE'}</span>
       </div>

@@ -1,4 +1,4 @@
-import { TOOL_TITLES } from './labels.js'
+import { REASONS, STATES, TOOL_TITLES } from './labels.js'
 
 // search_slots(doctor_id="dr_rao", date="2026-10-03")
 function rawCall(event) {
@@ -56,7 +56,23 @@ function Event({ event }) {
   )
 }
 
-export default function Transcript({ transcript }) {
+// The closing line of the transcript: what happened, in one plain sentence.
+function ResultBanner({ result }) {
+  const state = STATES[result.terminal_state]
+  const reason = REASONS[result.escalation_reason]
+  return (
+    <div className="event">
+      <div className="event-role" />
+      <div className={'banner ' + state.tone}>
+        {state.title}
+        {reason ? ` — ${reason.meaning}` : ''}. {state.meaning}
+        {result.appointment_id ? ` (${result.appointment_id}, patient ${result.patient_id})` : ''}
+      </div>
+    </div>
+  )
+}
+
+export default function Transcript({ transcript, result }) {
   return (
     <section className="card">
       <h2>Transcript and tool calls</h2>
@@ -73,6 +89,7 @@ export default function Transcript({ transcript }) {
           ))}
         </div>
       ))}
+      <ResultBanner result={result} />
     </section>
   )
 }

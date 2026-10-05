@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react'
 import { getQueue, getSamples, resolveHandoff, runAgent } from './api.js'
 import { REASONS } from './labels.js'
 
-function Counter({ label, value, note, noteTone }) {
+// What the caller actually said is shown in quotes; a summary written by the agent is not.
+const QUOTED = ['clinical_urgent', 'medical_advice']
+
+function Counter({ label, value, note, noteTone, alert }) {
   return (
-    <div className="card counter">
+    <div className={'card counter' + (alert ? ' alert' : '')}>
       <div className="eyebrow">{label}</div>
       <div className="counter-value">{value}</div>
       <div className={'counter-note ' + (noteTone || '')}>{note}</div>
@@ -70,15 +73,25 @@ export default function HandoffQueue({ onOpen }) {
         <Counter label="Conversations" value={queue.conversations} note="this session" />
         <Counter label="Completed by agent" value={queue.completed_by_agent} note={percent} />
         <Counter label="Escalated" value={queue.escalated} note={`${queue.open} still open`} noteTone="blue" />
-        <Counter label="Urgent" value={queue.urgent_unresolved} note="clinical, unresolved" noteTone="red" />
+        <Counter
+          label="Urgent"
+          value={queue.urgent_unresolved}
+          note="clinical, unresolved"
+          noteTone="red"
+          alert={queue.urgent_unresolved > 0}
+        />
       </section>
 
       <section className="card">
         <h2>Open handoffs</h2>
         {queue.handoffs.length === 0 ? (
-          <p className="muted empty">
-            No open handoffs. Use “Replay sample calls” to run the example conversations.
-          </p>
+          <div className="empty">
+            <p className="strong">Nothing is waiting for a human.</p>
+            <p className="muted">Replay the sample calls to see how the agent handles them.</p>
+            <button className="button primary" onClick={replaySamples} disabled={!!busy}>
+              {busy || 'Replay sample calls'}
+            </button>
+          </div>
         ) : (
           <table className="table">
             <thead>
@@ -94,13 +107,15 @@ export default function HandoffQueue({ onOpen }) {
               {queue.handoffs.map((handoff, index) => {
                 const reason = REASONS[handoff.reason]
                 return (
-                  <tr key={handoff.conversation_id}>
+                  <tr key={handoff.conversation_id} className={reason.tone === 'red' ? 'urgent' : ''}>
                     <td>
                       <button className="link mono" onClick={() => onOpen(handoff.conversation_id)}>
                         {handoff.conversation_id}
                       </button>
                     </td>
-                    <td className="strong">{handoff.caller_said}</td>
+                    <td className="strong">
+                      {QUOTED.includes(handoff.reason) ? `“${handoff.caller_said}”` : handoff.caller_said}
+                    </td>
                     <td>
                       <span className={'badge ' + reason.tone}>{reason.label}</span>
                     </td>

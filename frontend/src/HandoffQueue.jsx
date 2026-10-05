@@ -84,6 +84,9 @@ export default function HandoffQueue({ onOpen }) {
 
       <section className="card">
         <h2>Open handoffs</h2>
+        <p className="muted small">
+          Calls the agent could not safely finish. Open one to read the transcript, then mark it resolved.
+        </p>
         {queue.handoffs.length === 0 ? (
           <div className="empty">
             <p className="strong">Nothing is waiting for a human.</p>
@@ -120,7 +123,10 @@ export default function HandoffQueue({ onOpen }) {
                       <span className={'badge ' + reason.tone}>{reason.label}</span>
                     </td>
                     <td className="muted">{handoff.time}</td>
-                    <td className="right">
+                    <td className="right actions">
+                      <button className="button" onClick={() => onOpen(handoff.conversation_id)}>
+                        View
+                      </button>
                       <button
                         className={'button' + (index === 0 ? ' primary' : '')}
                         onClick={() => resolve(handoff.conversation_id)}

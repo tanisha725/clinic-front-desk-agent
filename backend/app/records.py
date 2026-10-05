@@ -37,13 +37,12 @@ def save(conversation_id, today, turns, result, extra):
             "fingerprints": earlier + [fingerprint(result)],
         }
         if result["terminal_state"] == "escalated":
-            previous = handoffs.get(conversation_id, {})
             handoffs[conversation_id] = {
                 "conversation_id": conversation_id,
                 "caller_said": extra["detail"],
                 "reason": result["escalation_reason"],
                 "time": now.strftime("%H:%M"),
-                "status": previous.get("status", "open"),  # a re-run does not reopen it
+                "status": "open",  # running the call again puts it back in the queue
             }
         else:
             handoffs.pop(conversation_id, None)

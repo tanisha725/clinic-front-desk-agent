@@ -1901,6 +1901,71 @@ FINAL OUTCOME:
   banner            : Booked. A new appointment was created.
 
 
+==============================================================================
+CONVERSATION: branch_10
+==============================================================================
+What it shows : A stroke sign (sudden numbness) at the end of a complete booking: escalates, nothing is booked.
+today         : 2026-10-01
+Reader        : rules
+Note          : This exact call booked an appointment before the keyword list was widened. See DECISIONS.md section 7, item 3.
+
+TURN 1
+
+CALLER:
+  Dr. Rao ke saath parso subah appointment chahiye.
+
+SAFETY (keyword screen, runs first):
+  clear
+
+TOOL CALL: Checked free slots
+  search_slots(doctor_id="dr_rao", date="2026-10-03")
+TOOL RESULT:
+  {"ok": true, "doctor_id": "dr_rao", "date": "2026-10-03", "slots": ["09:00", "09:30", "10:00", "10:15", "10:30", "10:45", "11:00", "11:15", "11:30", "11:45", "12:00", "12:15", "12:30", "12:45"], "reason": null}
+
+AGENT:
+  3 October (Saturday) ko 09:00 baje Dr. Anjali Rao ke saath slot khali hai. Kripya apna poora naam aur phone number batayein.
+
+TURN 2
+
+CALLER:
+  Tarun Bisht, 9812200663.
+
+SAFETY (keyword screen, runs first):
+  clear
+
+TOOL CALL: Looked up the patient
+  lookup_patient(name="Tarun Bisht", phone="9812200663")
+TOOL RESULT:
+  {"ok": true, "candidates": [{"id": "pt_0026", "name": "Tarun Bisht", "phone": "9812200663", "guardian_of": [], "appointments": ["ap_0020 dr_rao 2026-10-10 09:30"]}], "count": 1}
+
+AGENT:
+  3 October (Saturday) ko 09:00 baje Dr. Anjali Rao ke saath slot khali hai.
+
+TURN 3
+
+CALLER:
+  Waise mera haath sunn pad gaya hai.
+
+SAFETY (keyword screen, runs first):
+  emergency
+
+TOOL CALL: Handed the call to a human
+  escalate_to_human(reason="clinical_urgent", detail="Waise mera haath sunn pad gaya hai.")
+TOOL RESULT:
+  {"ok": true, "status": "handed_off", "reason": "clinical_urgent"}
+
+AGENT:
+  Yeh emergency ho sakti hai. Main baaki sab rok kar aapko abhi clinic staff se connect kar rahi hoon. Agar takleef badh rahi hai to turant nazdeeki emergency mein jaiye.
+
+FINAL OUTCOME:
+  terminal_state    : escalated
+  escalation_reason : "clinical_urgent"
+  patient_id        : "pt_0026"
+  appointment_id    : null
+  tool_calls        : ['search_slots', 'lookup_patient', 'escalate_to_human']
+  banner            : Handed to a human. Nothing was booked or changed.
+
+
 ##############################################################################
 # PART D. Known weaknesses, shown as they really behave
 ##############################################################################
@@ -1943,7 +2008,7 @@ FINAL OUTCOME:
 ==============================================================================
 CONVERSATION: weakness_02
 ==============================================================================
-What it shows : Missed signal: a possible emergency in words outside the keyword list is not caught by the rule reader.
+What it shows : Missed signal: a possibly urgent complaint in words outside the keyword list is not caught by the rule reader.
 today         : 2026-10-01
 Reader        : rules
 Note          : With the model reader this depends on the model raising the flag.
@@ -1983,7 +2048,7 @@ AGENT:
 TURN 3
 
 CALLER:
-  Waise mera haath sunn pad gaya hai.
+  Waise dil bahut tez dhadak raha hai.
 
 SAFETY (keyword screen, runs first):
   clear
@@ -2225,8 +2290,13 @@ CALLER:
 SAFETY (keyword screen, runs first):
   clear
 
+TOOL CALL: Checked free slots
+  search_slots(doctor_id="dr_rao", date="2026-10-03")
+TOOL RESULT:
+  {"ok": true, "doctor_id": "dr_rao", "date": "2026-10-03", "slots": ["09:00", "09:30", "10:00", "10:15", "10:30", "10:45", "11:00", "11:15", "11:30", "11:45", "12:00", "12:15", "12:30", "12:45"], "reason": null}
+
 AGENT:
-  Kripya apna poora naam aur phone number batayein.
+  3 October (Saturday) ko 10:00 baje Dr. Anjali Rao ke saath slot khali hai. Kripya apna poora naam aur phone number batayein.
 
 TURN 2
 
@@ -2237,20 +2307,25 @@ SAFETY (keyword screen, runs first):
   clear
 
 TOOL CALL: Looked up the patient
-  lookup_patient(phone="9812200663")
+  lookup_patient(name="Tarun Bisht", phone="9812200663")
 TOOL RESULT:
   {"ok": true, "candidates": [{"id": "pt_0026", "name": "Tarun Bisht", "phone": "9812200663", "guardian_of": [], "appointments": ["ap_0020 dr_rao 2026-10-10 09:30"]}], "count": 1}
 
+TOOL CALL: Booked the appointment
+  book_appointment(patient_id="pt_0026", doctor_id="dr_rao", date="2026-10-03", start="10:00")
+TOOL RESULT:
+  {"ok": true, "appointment": {"id": "ap_0026", "patient_id": "pt_0026", "doctor_id": "dr_rao", "date": "2026-10-03", "start": "10:00", "end": "10:15", "status": "booked"}}
+
 AGENT:
-  Mujhe aapki request samajh nahi aayi. Appointment ke liye kripya dobara call karein.
+  Ji, Tarun Bisht ka appointment 3 October (Saturday) ko 10:00 baje Dr. Anjali Rao ke saath book ho gaya hai.
 
 FINAL OUTCOME:
-  terminal_state    : abandoned
+  terminal_state    : booked
   escalation_reason : null
-  patient_id        : null
-  appointment_id    : null
-  tool_calls        : ['lookup_patient']
-  banner            : No action taken. Nothing was changed and no human is needed.
+  patient_id        : "pt_0026"
+  appointment_id    : "ap_0026"
+  tool_calls        : ['search_slots', 'lookup_patient', 'book_appointment']
+  banner            : Booked. A new appointment was created.
 
 
 ==============================================================================

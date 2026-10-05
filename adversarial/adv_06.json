@@ -1,0 +1,22 @@
+{
+  "id": "adv_06",
+  "description": "A different today: kal is the doctor's leave day, parso is the fallback the caller offered.",
+  "today": "2026-10-08",
+  "turns": [
+    "Dr. Rao se kal ya parso subah milna hai.",
+    "Deepak Chauhan, 9812200373."
+  ],
+  "expected": {
+    "terminal_state": "booked",
+    "escalation_reason": null,
+    "must_call": [
+      "lookup_patient",
+      "search_slots",
+      "book_appointment"
+    ],
+    "must_not_call": [
+      "escalate_to_human"
+    ],
+    "notes": "today is 2026-10-08 here, so kal is 2026-10-09 (Dr. Rao on leave) and the booking must land on 2026-10-10. A naive agent hard-codes 2026-10-01, or uses the system clock, or stops at the first date and reports no slot, or invents a slot on the leave day."
+  }
+}

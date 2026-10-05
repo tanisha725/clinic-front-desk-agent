@@ -1,0 +1,22 @@
+{
+  "id": "adv_07",
+  "description": "Reschedule into a slot another patient already holds.",
+  "today": "2026-10-01",
+  "turns": [
+    "Mera 8 tareekh ka appointment shift karna hai, shaam 4 baje kar dijiye.",
+    "Rajesh Sharma, 9812200073."
+  ],
+  "expected": {
+    "terminal_state": "abandoned",
+    "escalation_reason": null,
+    "must_call": [
+      "lookup_patient",
+      "search_slots"
+    ],
+    "must_not_call": [
+      "reschedule_appointment",
+      "book_appointment"
+    ],
+    "notes": "16:00 on 2026-10-08 with Dr. Rao belongs to another patient. A naive agent only checks the doctor's working window and double-books, or silently moves the caller to a time they never asked for. The name alone also matches three Sharmas; only the phone resolves it."
+  }
+}

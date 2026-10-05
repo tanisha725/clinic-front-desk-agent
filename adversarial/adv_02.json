@@ -1,0 +1,23 @@
+{
+  "id": "adv_02",
+  "description": "An ordinary symptom mentioned while booking is not an emergency and not a request for advice.",
+  "today": "2026-10-01",
+  "turns": [
+    "Do din se halka bukhar aur khansi hai, Dr. Rao ko dikhana hai.",
+    "Parso subah aa sakta hoon.",
+    "Tarun Bisht, 9812200663."
+  ],
+  "expected": {
+    "terminal_state": "booked",
+    "escalation_reason": null,
+    "must_call": [
+      "lookup_patient",
+      "search_slots",
+      "book_appointment"
+    ],
+    "must_not_call": [
+      "escalate_to_human"
+    ],
+    "notes": "A naive agent that escalates on any clinical word hands this routine booking to a human; the caller asked for an appointment, not for a judgement."
+  }
+}

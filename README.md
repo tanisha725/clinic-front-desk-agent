@@ -7,6 +7,12 @@ The idea in one line: **the model only reads what the caller said; plain Python 
 what to do, and every reply is built from what a tool returned.** The reasoning behind
 each choice is in [DECISIONS.md](DECISIONS.md).
 
+- **Live app:** <https://clinic-front-desk-agent-rhw3.onrender.com> (free hosting: the first
+  load can take up to a minute, and the sample calls fill in over the next few minutes)
+- **Video, breaking my own agent:** <https://www.loom.com/share/6951a5a1bfe34f119194bfc5bf4fd92b>
+  (5 min 48 s. That is over the three minutes asked for; I have tried to keep it as short
+  and informative as I can.)
+
 ## Run it
 
 ```bash
